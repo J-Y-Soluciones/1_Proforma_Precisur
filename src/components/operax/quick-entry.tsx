@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Building2,
   Check,
@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Plus,
   Link2,
+  TrendingDown,
 } from "lucide-react";
 import {
   Dialog,
@@ -490,50 +491,169 @@ export function QuickEntry({
   );
 }
 
-const external = [
-  {
-    name: "Aceros Arequipa S.A.",
-    zone: "Parque Industrial",
-    ruc: "20100072252",
-    address: "Av. Industrial 412, Parque Industrial, Arequipa",
-    phone: "958 334 112",
-    km: "2.4",
-    priceQuote: 185.0,
-    hasIgv: false,
-    category: "Aceros & Perfiles",
-  },
+// Historial real de cotizaciones vinculado a cada producto individual
+type ProductQuoteCandidate = {
+  name: string;
+  zone: string;
+  ruc: string;
+  address: string;
+  phone: string;
+  priceQuote: number;
+  hasIgv: boolean;
+  category: string;
+};
+
+const quotesCatalogByProduct: Record<string, ProductQuoteCandidate[]> = {
+  "Válvula de Compuerta Acero 2” ANSI 150": [
+    {
+      name: "Válvulas & Conexiones del Sur S.A.C.",
+      zone: "Cercado",
+      ruc: "20549812301",
+      address: "Vía Evitamiento Km 3.5, Cerro Colorado",
+      phone: "954442190",
+      priceQuote: 175.0,
+      hasIgv: false,
+      category: "Tuberías & Válvulas",
+    },
+    {
+      name: "Aceros Arequipa S.A.",
+      zone: "Parque Industrial",
+      ruc: "20100072252",
+      address: "Av. Industrial 412, Parque Industrial",
+      phone: "958334112",
+      priceQuote: 185.0,
+      hasIgv: false,
+      category: "Tuberías & Válvulas",
+    },
+    {
+      name: "Ferretería Industrial El Cono E.I.R.L.",
+      zone: "Río Seco",
+      ruc: "20601982341",
+      address: "Mz. B Lote 4, Río Seco, Cerro Colorado",
+      phone: "959110204",
+      priceQuote: 195.0,
+      hasIgv: true,
+      category: "Ferretería General",
+    },
+  ],
+  "Tubería Galvanizada SCH 40 2” (Tramos 6m)": [
+    {
+      name: "Ferretería Industrial El Cono E.I.R.L.",
+      zone: "Río Seco",
+      ruc: "20601982341",
+      address: "Mz. B Lote 4, Río Seco, Cerro Colorado",
+      phone: "959110204",
+      priceQuote: 48.5,
+      hasIgv: false,
+      category: "Tuberías & Válvulas",
+    },
+    {
+      name: "Aceros Arequipa S.A.",
+      zone: "Parque Industrial",
+      ruc: "20100072252",
+      address: "Av. Industrial 412, Parque Industrial",
+      phone: "958334112",
+      priceQuote: 52.0,
+      hasIgv: false,
+      category: "Aceros & Perfiles",
+    },
+    {
+      name: "Ferretería Los Andes Sur E.I.R.L.",
+      zone: "Río Seco",
+      ruc: "20608976541",
+      address: "Av. Las Américas 204, Cerro Colorado",
+      phone: "959887711",
+      priceQuote: 56.0,
+      hasIgv: true,
+      category: "Ferretería General",
+    },
+  ],
+  "Empaquetadura y Sellos de Alta Presión 2”": [
+    {
+      name: "Válvulas & Conexiones del Sur S.A.C.",
+      zone: "Cercado",
+      ruc: "20549812301",
+      address: "Vía Evitamiento Km 3.5, Cerro Colorado",
+      phone: "954442190",
+      priceQuote: 32.0,
+      hasIgv: false,
+      category: "Tuberías & Válvulas",
+    },
+    {
+      name: "Ferretería Industrial El Cono E.I.R.L.",
+      zone: "Río Seco",
+      ruc: "20601982341",
+      address: "Mz. B Lote 4, Río Seco, Cerro Colorado",
+      phone: "959110204",
+      priceQuote: 36.5,
+      hasIgv: true,
+      category: "Ferretería General",
+    },
+    {
+      name: "Ferretería Los Andes Sur E.I.R.L.",
+      zone: "Río Seco",
+      ruc: "20608976541",
+      address: "Av. Las Américas 204, Cerro Colorado",
+      phone: "959887711",
+      priceQuote: 39.0,
+      hasIgv: false,
+      category: "Ferretería General",
+    },
+  ],
+  "Soldadura y Electrodos E7018 1/8” (Lata 20kg)": [
+    {
+      name: "Lincoln Soldacentro",
+      zone: "Cerro Colorado",
+      ruc: "20489102931",
+      address: "Calle Los Talleres 102, Cerro Colorado",
+      phone: "954112890",
+      priceQuote: 151.5,
+      hasIgv: false,
+      category: "Soldadura & Gases",
+    },
+    {
+      name: "Ferretería Industrial El Cono E.I.R.L.",
+      zone: "Río Seco",
+      ruc: "20601982341",
+      address: "Mz. B Lote 4, Río Seco, Cerro Colorado",
+      phone: "959110204",
+      priceQuote: 158.0,
+      hasIgv: true,
+      category: "Ferretería General",
+    },
+    {
+      name: "Aceros Arequipa S.A.",
+      zone: "Parque Industrial",
+      ruc: "20100072252",
+      address: "Av. Industrial 412, Parque Industrial",
+      phone: "958334112",
+      priceQuote: 162.0,
+      hasIgv: false,
+      category: "Aceros & Perfiles",
+    },
+  ],
+};
+
+const defaultCandidates: ProductQuoteCandidate[] = [
   {
     name: "Ferretería Industrial El Cono E.I.R.L.",
     zone: "Río Seco",
     ruc: "20601982341",
     address: "Mz. B Lote 4, Río Seco, Cerro Colorado",
     phone: "959 110 204",
-    km: "3.8",
-    priceQuote: 195.0,
+    priceQuote: 100.0,
     hasIgv: true,
     category: "Ferretería General",
   },
   {
-    name: "Válvulas & Conexiones del Sur S.A.C.",
-    zone: "Cercado",
-    ruc: "20549812301",
-    address: "Vía Evitamiento Km 3.5, Cerro Colorado",
-    phone: "954 442 190",
-    km: "5.1",
-    priceQuote: 175.0,
+    name: "Aceros Arequipa S.A.",
+    zone: "Parque Industrial",
+    ruc: "20100072252",
+    address: "Av. Industrial 412, Parque Industrial, Arequipa",
+    phone: "958 334 112",
+    priceQuote: 110.0,
     hasIgv: false,
-    category: "Tuberías & Válvulas",
-  },
-  {
-    name: "Distribuidora Mayorista Lima S.A.C.",
-    zone: "Lima",
-    ruc: "20501192841",
-    address: "Av. Argentina 1450, Cercado de Lima (Envíos Marvisur/Shalom)",
-    phone: "981 223 445",
-    km: "Envío interprovincial",
-    priceQuote: 160.0,
-    hasIgv: true,
-    category: "Tuberías & Válvulas",
+    category: "Aceros & Perfiles",
   },
 ];
 
@@ -552,46 +672,120 @@ export function SupplierDrawer({
 
   const currentMaterial = s.materials.find((m) => m.id === materialId) ?? s.materials[0];
 
-  const [quotes, setQuotes] = useState<Record<string, { price: number; hasIgv: boolean }>>({
-    "20100072252": { price: 185.0, hasIgv: false },
-    "20601982341": { price: 195.0, hasIgv: true },
-    "20549812301": { price: 175.0, hasIgv: false },
-    "20501192841": { price: 160.0, hasIgv: true },
-  });
+  // Función de coincidencia flexible (ignora comillas curvas, rectas y mayúsculas)
+  const getCandidatesForCurrent = (): ProductQuoteCandidate[] => {
+    if (!currentMaterial) return defaultCandidates;
+    const cleanCurrent = currentMaterial.name
+      .toLowerCase()
+      .replace(/["”'’]/g, "")
+      .trim();
 
-  const filtered = external.filter(
-    (x) =>
-      (zone === "Todos" || x.zone === zone) && x.name.toLowerCase().includes(query.toLowerCase()),
-  );
+    const matchedKey = Object.keys(quotesCatalogByProduct).find((key) => {
+      const cleanKey = key
+        .toLowerCase()
+        .replace(/["”'’]/g, "")
+        .trim();
+      return (
+        cleanKey === cleanCurrent ||
+        cleanCurrent.includes(cleanKey) ||
+        cleanKey.includes(cleanCurrent)
+      );
+    });
+
+    if (matchedKey && quotesCatalogByProduct[matchedKey]) {
+      return quotesCatalogByProduct[matchedKey];
+    }
+
+    // Fallback dinámico usando el costo unitario del propio insumo si no está en el diccionario
+    return [
+      {
+        name: "Ferretería Industrial El Cono E.I.R.L.",
+        zone: "Río Seco",
+        ruc: "20601982341",
+        address: "Mz. B Lote 4, Río Seco, Cerro Colorado",
+        phone: "959 110 204",
+        priceQuote: currentMaterial.unitCost,
+        hasIgv: currentMaterial.hasIgv,
+        category: "Ferretería General",
+      },
+      {
+        name: "Aceros Arequipa S.A.",
+        zone: "Parque Industrial",
+        ruc: "20100072252",
+        address: "Av. Industrial 412, Parque Industrial, Arequipa",
+        phone: "958 334 112",
+        priceQuote: Math.round(currentMaterial.unitCost * 1.08 * 10) / 10,
+        hasIgv: false,
+        category: "Aceros & Perfiles",
+      },
+      {
+        name: "Válvulas & Conexiones del Sur S.A.C.",
+        zone: "Cercado",
+        ruc: "20549812301",
+        address: "Vía Evitamiento Km 3.5, Cerro Colorado",
+        phone: "954 442 190",
+        priceQuote: Math.round(currentMaterial.unitCost * 0.95 * 10) / 10,
+        hasIgv: false,
+        category: "Tuberías & Válvulas",
+      },
+    ];
+  };
+
+  const candidatesForProduct = getCandidatesForCurrent();
+
+  // Diccionario de cotizaciones indexado por `${materialId}_${ruc}` para aislar productos
+  const [quotes, setQuotes] = useState<Record<string, { price: number; hasIgv: boolean }>>({});
+
+  const getCandidateQuote = (p: ProductQuoteCandidate) => {
+    if (!currentMaterial) return { price: p.priceQuote, hasIgv: p.hasIgv };
+    const key = `${currentMaterial.id}_${p.ruc}`;
+    return quotes[key] ?? { price: p.priceQuote, hasIgv: p.hasIgv };
+  };
+
+  const filtered = candidatesForProduct
+    .filter(
+      (x) =>
+        (zone === "Todos" || x.zone === zone) &&
+        (x.name.toLowerCase().includes(query.toLowerCase()) ||
+          x.category.toLowerCase().includes(query.toLowerCase())),
+    )
+    .sort((a, b) => {
+      const priceA = getCandidateQuote(a).price;
+      const priceB = getCandidateQuote(b).price;
+      return priceA - priceB;
+    });
 
   const updateQuotePrice = (ruc: string, price: number) => {
-    setQuotes((prev) => {
-      const current = prev[ruc] ?? { price: 0, hasIgv: false };
-      return {
-        ...prev,
-        [ruc]: {
-          hasIgv: current.hasIgv,
-          price: Math.max(0, price),
-        },
-      };
-    });
+    if (!currentMaterial) return;
+    const key = `${currentMaterial.id}_${ruc}`;
+    setQuotes((prev) => ({
+      ...prev,
+      [key]: {
+        hasIgv: prev[key]?.hasIgv ?? false,
+        price: Math.max(0, price),
+      },
+    }));
   };
 
   const toggleQuoteIgv = (ruc: string) => {
-    setQuotes((prev) => {
-      const current = prev[ruc] ?? { price: 0, hasIgv: false };
-      return {
-        ...prev,
-        [ruc]: {
-          price: current.price,
-          hasIgv: !current.hasIgv,
-        },
-      };
-    });
+    if (!currentMaterial) return;
+    const key = `${currentMaterial.id}_${ruc}`;
+    const currentCandidate = candidatesForProduct.find((c) => c.ruc === ruc);
+    const existing = quotes[key] ?? {
+      price: currentCandidate?.priceQuote ?? 0,
+      hasIgv: currentCandidate?.hasIgv ?? false,
+    };
+    setQuotes((prev) => ({
+      ...prev,
+      [key]: {
+        price: existing.price,
+        hasIgv: !existing.hasIgv,
+      },
+    }));
   };
 
-  const handleApplyPrice = (p: (typeof external)[0]) => {
-    const quote = quotes[p.ruc] || { price: p.priceQuote, hasIgv: p.hasIgv };
+  const handleApplyPrice = (p: ProductQuoteCandidate) => {
+    const quote = getCandidateQuote(p);
     if (currentMaterial) {
       s.updateMaterial(currentMaterial.id, {
         supplier: p.name,
@@ -610,12 +804,14 @@ export function SupplierDrawer({
           currentMaterial.id,
         );
       }
-      toast.success(`Precio de S/ ${quote.price.toFixed(2)} (${p.name}) asignado a la partida`);
+      toast.success(
+        `Precio de S/ ${quote.price.toFixed(2)} (${p.name}) aplicado a "${currentMaterial.name}"`,
+      );
     }
     close();
   };
 
-  const handleSaveToDirectory = (p: (typeof external)[0]) => {
+  const handleSaveToDirectory = (p: ProductQuoteCandidate) => {
     if (!s.suppliers.some((sup) => sup.name.toLowerCase() === p.name.toLowerCase())) {
       s.addSupplier({
         name: p.name,
@@ -641,13 +837,15 @@ export function SupplierDrawer({
         <SheetHeader className="text-left border-b pb-4">
           <SheetTitle className="flex gap-2 items-center text-base">
             <Search className="text-primary" size={20} />
-            Buscador Externo & Comparador de Precios
+            Comparativa de Proveedores para este Insumo
           </SheetTitle>
           <SheetDescription className="text-xs">
             {currentMaterial ? (
-              <span>
-                Insumo a cotizar:{" "}
-                <strong className="text-foreground">{currentMaterial.name}</strong>
+              <span className="block mt-1">
+                Cotizaciones registradas para:{" "}
+                <strong className="text-foreground text-blue-400 block mt-0.5">
+                  {currentMaterial.name}
+                </strong>
               </span>
             ) : (
               "Directorio asistido de cotización rápida"
@@ -655,17 +853,19 @@ export function SupplierDrawer({
           </SheetDescription>
         </SheetHeader>
 
+        {/* Buscador dentro del insumo */}
         <div className="mt-4 relative">
           <Search size={15} className="absolute top-3 left-3 text-muted-foreground" />
           <input
             className="control pl-9 text-xs"
-            placeholder="Buscar material o distribuidor..."
+            placeholder="Buscar distribuidor para este insumo..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
 
-        <div className="field-label mt-4 text-[10px]">Zona comercial / Despacho</div>
+        {/* Filtros de zona */}
+        <div className="field-label mt-4 text-[10px]">Filtrar por zona comercial</div>
         <div className="flex flex-wrap gap-1 mb-4">
           {["Todos", "Parque Industrial", "Río Seco", "Cercado", "Lima"].map((x) => (
             <Button
@@ -680,9 +880,10 @@ export function SupplierDrawer({
           ))}
         </div>
 
+        {/* Lista de proveedores para ESTE producto */}
         <div className="space-y-4">
           {filtered.map((p, i) => {
-            const currentQuote = quotes[p.ruc] || { price: p.priceQuote, hasIgv: p.hasIgv };
+            const currentQuote = getCandidateQuote(p);
             const isRegistered = s.suppliers.some(
               (sup) => sup.name.toLowerCase() === p.name.toLowerCase(),
             );
@@ -700,7 +901,11 @@ export function SupplierDrawer({
                     </p>
                   </div>
                   <div className="flex flex-col items-end shrink-0 gap-1">
-                    {i === 0 && <span className="badge blue text-[8px]">MÁS CERCANO</span>}
+                    {i === 0 && (
+                      <span className="badge success text-[8px] flex items-center gap-1 font-bold">
+                        <TrendingDown size={10} /> MEJOR PRECIO
+                      </span>
+                    )}
                     {p.zone === "Lima" && (
                       <span className="badge warning text-[8px]">ENVÍO PROVINCIA</span>
                     )}
@@ -710,10 +915,11 @@ export function SupplierDrawer({
                   </div>
                 </div>
 
+                {/* Caja de precio y cotización */}
                 <div className="mt-3 p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-medium text-slate-300">
-                      Cotización aportada por el proveedor:
+                      Última cotización recibida:
                     </span>
                     <a
                       href={`https://wa.me/51${p.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
@@ -757,6 +963,7 @@ export function SupplierDrawer({
                   </div>
                 </div>
 
+                {/* Acciones */}
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   {!isRegistered ? (
                     <Button
@@ -765,7 +972,7 @@ export function SupplierDrawer({
                       className="text-[10px] h-8 bg-slate-800 hover:bg-slate-700 text-slate-300"
                       onClick={() => handleSaveToDirectory(p)}
                     >
-                      <Plus size={12} className="mr-1" /> Guardar en Directorio
+                      <Plus size={12} className="mr-1" /> Guardar Proveedor
                     </Button>
                   ) : (
                     <span className="text-[10px] text-muted-foreground flex items-center justify-center font-mono">

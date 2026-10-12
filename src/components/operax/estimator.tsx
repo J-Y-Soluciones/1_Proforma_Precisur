@@ -45,12 +45,14 @@ export function Estimator() {
   const s = useQuotationStore();
   const t = calculateTotals(s);
   const [entry, setEntry] = useState<EntryKind>(null);
-  const [drawer, setDrawer] = useState(false);
-  const [materialId, setMaterialId] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [supplierName, setSupplierName] = useState<string>();
   const [previewOpen, setPreviewOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Estado único para el Drawer y el material activo
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeMaterialId, setActiveMaterialId] = useState<string | undefined>(undefined);
 
   const review = () => {
     s.setStatus("Pendiente de aprobación");
@@ -70,14 +72,14 @@ export function Estimator() {
   }, [navigate]);
 
   const openSupplier = (id: string, name: string) => {
-    setMaterialId(id);
+    setActiveMaterialId(id);
     setSupplierName(name);
     setEntry("supplier");
   };
 
-  const openPriceComparison = (id?: string) => {
-    setMaterialId(id);
-    setDrawer(true);
+  const handleOpenComparison = (id?: string) => {
+    setActiveMaterialId(id ?? s.materials[0]?.id);
+    setDrawerOpen(true);
   };
 
   return (
@@ -126,7 +128,7 @@ export function Estimator() {
       {/* Barra de metadatos SUNAT */}
       <div className="panel mb-5 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-[11px]">
-          <FileCheck2 size={14} className="text-primary" />
+          <FileCheck2 size={14} />
           <span className="mono font-medium">{s.quotationNumber}</span>
           <span className="text-muted-foreground mx-2 hidden xl:inline">
             Operador: Recepción Operativa / Precisur
@@ -340,7 +342,7 @@ export function Estimator() {
             </section>
           )}
 
-          {/* 3. Mano de Obra y Cuadrilla (Paso 1: Se define el técnico y sus requerimientos) */}
+          {/* 3. Mano de Obra y Cuadrilla */}
           {s.mode === "service" && (
             <section className="panel">
               <div className="panel-heading">
@@ -443,7 +445,7 @@ export function Estimator() {
             </section>
           )}
 
-          {/* 4. Tabla de Materiales (Paso 2: Se cargan los materiales con markup de la asistenta) */}
+          {/* 4. Tabla de Materiales */}
           <section className="panel">
             <div className="panel-heading">
               <div>
@@ -455,15 +457,6 @@ export function Estimator() {
                   Paso 2: Costeo de insumos requeridos · Compara precios en Arequipa y Lima
                 </p>
               </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="text-[9px]"
-                onClick={() => openPriceComparison(s.materials[0]?.id)}
-              >
-                <Scale className="mr-1" size={13} />
-                <span className="hidden sm:inline">Comparar Precios</span>
-              </Button>
             </div>
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -520,11 +513,14 @@ export function Estimator() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-blue-400 hover:text-blue-300"
-                              title="Comparar cotizaciones de este insumo"
-                              onClick={() => openPriceComparison(m.id)}
+                              className="h-8 w-8 text-slate-400 hover:text-blue-400 hover:bg-slate-800"
+                              title="Comparar cotizaciones para este insumo"
+                              onClick={() => {
+                                setActiveMaterialId(m.id);
+                                setDrawerOpen(true);
+                              }}
                             >
-                              <Scale size={12} />
+                              <Scale size={15} />
                             </Button>
                           </div>
                         </td>
@@ -802,11 +798,18 @@ export function Estimator() {
           key={entry}
           kind={entry}
           close={() => setEntry(null)}
-          materialId={materialId}
+          materialId={activeMaterialId}
           initialSupplierName={supplierName}
         />
       )}
-      <SupplierDrawer open={drawer} close={() => setDrawer(false)} materialId={materialId} />
+
+      {/* Drawer con el id de material sincronizado */}
+      <SupplierDrawer
+        key={activeMaterialId ?? "default-drawer"}
+        open={drawerOpen}
+        close={() => setDrawerOpen(false)}
+        materialId={activeMaterialId}
+      />
     </>
   );
 }
