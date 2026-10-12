@@ -1,105 +1,102 @@
-import { useState } from 'react';
-import { Check, ChevronDown, Plus, Store } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandInput, CommandList, CommandGroup, CommandItem } from '@/components/ui/command';
-import { useQuotationStore } from '@/stores/quotation';
-import { filterSuppliers, supplierExists, supplierLeadTime } from '@/lib/supplier-options';
+import { useState } from "react";
+import { Check, ChevronsUpDown, Plus, Store } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useQuotationStore } from "@/stores/quotation";
 
-export function SupplierCombobox({ 
-  materialId, 
-  value, 
-  index, 
-  onRegister 
-}: { 
-  materialId: string; 
-  value: string; 
-  index: number; 
-  onRegister: (name: string) => void 
-}) {
+interface SupplierComboboxProps {
+  materialId: string;
+  value: string;
+  index: number;
+  onRegister: (name: string) => void;
+}
+
+export function SupplierCombobox({ materialId, value, index, onRegister }: SupplierComboboxProps) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const suppliers = useQuotationStore(s => s.suppliers);
-  const updateMaterial = useQuotationStore(s => s.updateMaterial);
-  
-  const options = filterSuppliers(suppliers, query);
-  const canRegister = Boolean(query.trim()) && !supplierExists(suppliers, query);
+  const [search, setSearch] = useState("");
+  const s = useQuotationStore();
 
-  const selectSupplier = (name: string) => {
-    // 1. Asigna el proveedor al material en la tabla
-    updateMaterial(materialId, { supplier: name });
-    // 2. Si no existía en el catálogo del store, lo añade
-    useQuotationStore.getState().addSupplier(name);
-    setOpen(false);
-  };
+  // Asegurar que leemos el nombre tanto si suppliers viene como string[] o como SupplierRecord[]
+  const supplierNames = s.suppliers.map((sup) => (typeof sup === "string" ? sup : sup.name));
 
-  const register = () => {
+  const handleSelect = (currentValue: string) => {
+    s.updateMaterial(materialId, { supplier: currentValue });
     setOpen(false);
-    onRegister(query.trim());
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mt-2">
-      <Popover open={open} onOpenChange={next => { setOpen(next); if(next) setQuery(''); }}>
-        <PopoverTrigger asChild>
-          <Button 
-            variant="secondary" 
-            size="sm" 
-            role="combobox" 
-            aria-expanded={open} 
-            aria-label={`Proveedor material ${index}`} 
-            className="h-7 max-w-[210px] text-[9px] px-2 rounded-full font-medium"
-          >
-            <Store className="size-3 mr-1 text-slate-400"/>
-            <span className="truncate">Prov: {value || 'Seleccionar'}</span>
-            <ChevronDown className="size-3 shrink-0 ml-1 opacity-50"/>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent side="bottom" align="start" sideOffset={6} className="p-0 w-[320px] max-w-[calc(100vw-32px)]">
-          <Command shouldFilter={false}>
-            <CommandInput 
-              placeholder="Buscar proveedor..." 
-              value={query} 
-              onValueChange={setQuery} 
-              onKeyDown={event => { 
-                if (event.key === 'Enter' && canRegister) { 
-                  event.preventDefault(); 
-                  event.stopPropagation(); 
-                  register(); 
-                } 
-              }}
-            />
-            <CommandList>
-              <CommandGroup heading="Proveedores homologados">
-                {options.map(name => (
-                  <CommandItem key={name} value={name} onSelect={() => selectSupplier(name)}>
-                    <Store className="size-3.5 mr-2 text-slate-400"/>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-medium">{name}</div>
-                      <div className="text-[10px] text-muted-foreground">{supplierLeadTime(name)}</div>
-                    </div>
-                    {value === name && <Check className="text-emerald-500 size-4"/>}
-                  </CommandItem>
-                ))}
-                {canRegister && (
-                  <CommandItem 
-                    value={`register-${query}`} 
-                    onSelect={register} 
-                    className="text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 py-2.5 font-semibold"
-                  >
-                    <Plus className="size-4 mr-2"/>
-                    <span className="min-w-0 flex-1 break-words">Registrar "{query.trim()}"</span>
-                    <span className="text-[10px] bg-blue-500/20 px-1.5 py-0.5 rounded text-blue-400">Enter ↵</span>
-                  </CommandItem>
-                )}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      <span className={`text-[8px] font-medium ${supplierLeadTime(value) === 'Stock Inmediato' ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-        {supplierLeadTime(value)}
-      </span>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-label={`Seleccionar proveedor material ${index}`}
+          className="h-7 w-full justify-between text-[10px] bg-slate-950/70 border-slate-800 text-slate-300 hover:bg-slate-900 hover:text-slate-100 font-normal px-2 mt-1"
+        >
+          <span className="truncate flex items-center gap-1.5">
+            <Store size={12} className="text-primary shrink-0" />
+            {value ? value : "Seleccionar proveedor..."}
+          </span>
+          <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[280px] p-0 bg-slate-950 border-slate-800 text-slate-200"
+        align="start"
+      >
+        <Command className="bg-transparent">
+          <CommandInput
+            placeholder="Buscar o registrar proveedor..."
+            value={search}
+            onValueChange={setSearch}
+            className="text-xs h-8 text-slate-100"
+          />
+          <CommandList className="max-h-56">
+            <CommandEmpty className="p-2 text-center text-xs text-muted-foreground">
+              <p className="mb-2">No se encontró "{search}".</p>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full text-[10px] h-7 bg-slate-800 hover:bg-slate-700 text-slate-200"
+                onClick={() => {
+                  setOpen(false);
+                  onRegister(search);
+                }}
+              >
+                <Plus size={11} className="mr-1" /> Registrar "{search}"
+              </Button>
+            </CommandEmpty>
+            <CommandGroup heading="Proveedores Registrados" className="text-[10px] text-slate-400">
+              {supplierNames.map((name) => (
+                <CommandItem
+                  key={name}
+                  value={name}
+                  onSelect={() => handleSelect(name)}
+                  className="text-xs text-slate-200 cursor-pointer hover:bg-slate-900 aria-selected:bg-slate-900"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-3.5 w-3.5 text-primary",
+                      value.toLowerCase() === name.toLowerCase() ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="truncate">{name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
